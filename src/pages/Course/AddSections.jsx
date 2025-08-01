@@ -41,10 +41,10 @@ export default function AddSections({ open, handleClose, courseRecord, setCourse
         if (selectedSection) {
             const addTimestampAndPreview = (urlArray, type) =>
                 urlArray.map((url) => {
-                    const filename = url.split('/').pop();
+                    const filename = url?.stored_name.split('/').pop();
                     return {
                         name: filename,
-                        preview: url,
+                        preview: url?.stored_name,
                         lastModified: Date.now(),
                         type,
                         url,
@@ -77,7 +77,7 @@ export default function AddSections({ open, handleClose, courseRecord, setCourse
             .required('Video is required'),
         document: Yup.array()
             .min(1, 'At least one document is required')
-            .required('Document is required')
+            .required('Document is required'),
     });
 
     const handleSubmit = async (values) => {
@@ -90,6 +90,8 @@ export default function AddSections({ open, handleClose, courseRecord, setCourse
                         ? { ...section, ...values }
                         : section
                 );
+
+                console.log("prev:", prev);
 
                 return {
                     ...prev,
