@@ -81,7 +81,7 @@ function App() {
 
           {/* Settings */}
           <Route path="/admin/profile" element={<Suspense fallback={<Loader />}><UserProfile /></Suspense>} />
-          <Route path="/admin/change-password" element={<Suspense fallback={<Loader />}><ChangePassword /></Suspense>} />
+          <Route path="/admin/change-password" element={<Suspense fallback={<Loader />}><PermissionRoute slug="password" action="edit"><ChangePassword /></PermissionRoute></Suspense>} />
 
           {/* Access Denied */}
           <Route path="*" element={<Suspense fallback={<Loader />}><AccessDenied /></Suspense>} />

@@ -3,11 +3,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 // Mui Imports
-import { TextField, Box, Typography, FormControl, FormHelperText, Button, Grid, Select, MenuItem, Checkbox, ListItemText, ListItem } from '@mui/material';
+import { TextField, Box, Typography, FormControl, FormHelperText, Button, Grid, Select, MenuItem, Checkbox, ListItemText, ListItem, styled, IconButton } from '@mui/material';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import Radio from '@mui/joy/Radio';
 import CreateOutlinedIcon from '@mui/icons-material/CreateOutlined';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
+import CloseIcon from '@mui/icons-material/Close';
 
 // Third Party imports
 import * as Yup from 'yup';
@@ -29,7 +30,7 @@ const initialValues = {
     status: "active",
     instructor_ids: "",
     participant_ids: [],
-    image: null,
+    course_image: null,
 };
 
 const ITEM_HEIGHT = 48;
@@ -43,6 +44,18 @@ const MenuProps = {
     },
 };
 
+const VisuallyHiddenInput = styled('input')({
+    clip: 'rect(0 0 0 0)',
+    clipPath: 'inset(50%)',
+    height: 1,
+    overflow: 'hidden',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    whiteSpace: 'nowrap',
+    width: 1,
+});
+
 function AddCourse() {
 
     // Hooks
@@ -55,7 +68,6 @@ function AddCourse() {
 
     // State
     const [loading, setLoading] = useState(false);
-    const [selectedFile, setSelectedFile] = useState(null);
     const [formData, setFormData] = useState(initialValues);
     const [category, setCategory] = useState([]);
     const [open, setOpen] = useState(false);
@@ -86,7 +98,7 @@ function AddCourse() {
                 course.category = course.category_id?._id;
                 course.instructor_ids = course.instructor_ids || "";
                 course.participant_ids = course.participant_ids?.map(role => role._id) || [];
-                course.image = course.course_image;
+                course.course_image = course.course_image;
                 course.status = course.status === true ? "active" : "inactive";
 
                 setFormData(course);
@@ -125,14 +137,6 @@ function AddCourse() {
         setSelectedSection(null);
     };
 
-    const handleDrop = (acceptedFiles) => {
-        const file = acceptedFiles[0];
-        if (file) {
-            file.preview = URL.createObjectURL(file);
-            setSelectedFile(file);
-        }
-    };
-
     const validationSchema = Yup.object({
         title: Yup.string().required("Course Title required"),
         description: Yup.string().required("Description required"),
@@ -155,8 +159,8 @@ function AddCourse() {
             formData.append('participant_ids', JSON.stringify(values.participant_ids));
         }
 
-        if (selectedFile instanceof File) {
-            formData.append('course_image', selectedFile ? selectedFile : null);
+        if (values.course_image instanceof File) {
+            formData.append('course_image', values.course_image);
         }
 
         const sections = values.sections || [];
@@ -376,14 +380,54 @@ function AddCourse() {
                                 </FormControl>
                                 <FormControl fullWidth>
                                     <Typography sx={{ mx: 0.5, mb: 0.4 }}>Course Image</Typography>
-                                    <Dropzone
-                                        onDrop={handleDrop}
-                                        mode="Drag"
-                                        preview={true}
-                                        selectedFile={selectedFile?.preview || formData.image}
-                                        multiple={true}
-                                        accept={{ 'image/*': [], 'video/*': [], 'application/pdf': [] }}
-                                    />
+                                    <Box component="label" role={undefined} tabIndex={-1} sx={{ border: '1px dashed #ccc', borderRadius: '8px', p: "6px" }}>
+                                        {values.course_image?.preview ? (
+                                            <Box sx={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
+                                                <img
+                                                    src={values.course_image.preview}
+                                                    alt="Course Preview"
+                                                    style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 8 }}
+                                                />
+                                                <IconButton
+                                                    sx={{
+                                                        position: 'absolute', top: 0, right: 0, padding: '4px', color: '#fff', bgcolor: 'rgba(0,0,0,0.6)', '&:hover': { bgcolor: 'black', },
+                                                    }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setFieldValue("course_image", null);
+                                                    }}
+                                                >
+                                                    <CloseIcon fontSize="small" />
+                                                </IconButton>
+                                            </Box>
+                                        ) : (
+                                            <Box sx={{ py: 4, cursor: "pointer" }}>
+                                                <Typography textAlign="center" fontWeight={700}>
+                                                    Drop file here or click to upload
+                                                </Typography>
+                                                <Typography textAlign="center">
+                                                    JPG, PNG, PDF, or Video files. Max file size 3MB.
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                        <VisuallyHiddenInput
+                                            type="file"
+                                            id="course_image"
+                                            name='course_image'
+                                            accept='image/*'
+                                            onBlur={handleBlur}
+                                            onChange={(event) => {
+                                                const file = event.currentTarget.files[0];
+                                                if (file) {
+                                                    const imageWithPreview = Object.assign(file, {
+                                                        preview: URL.createObjectURL(file),
+                                                    });
+
+                                                    setFieldValue("course_image", imageWithPreview);
+                                                }
+                                            }}
+                                        />
+                                    </Box>
                                 </FormControl>
                             </Box>
 

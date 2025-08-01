@@ -6,9 +6,9 @@ import { Box, Card, Grid, Typography } from "@mui/material";
 const Dashboard = () => {
 
     const counts = [
-        { label: 'Courses', value: 130 },
-        { label: 'Instructors', value: 55 },
-        { label: 'Participants', value: 60 },
+        { label: 'Courses', value: 10 },
+        { label: 'Instructors', value: 10 },
+        { label: 'Participants', value: 10 },
     ];
 
     return (
