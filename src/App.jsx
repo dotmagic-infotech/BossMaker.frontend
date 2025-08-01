@@ -42,7 +42,7 @@ const ChangePassword = React.lazy(() => import('./pages/Settings/ChangePassword'
 import './App.css'
 
 function App() {
-  
+
   return (
     <Routes>
       <Route path="/admin/signin" element={<Suspense fallback={<MainLoader />}><SignIn /></Suspense>} />
@@ -81,7 +81,7 @@ function App() {
 
           {/* Settings */}
           <Route path="/admin/profile" element={<Suspense fallback={<Loader />}><UserProfile /></Suspense>} />
-          <Route path="/admin/change-password" element={<Suspense fallback={<Loader />}><PermissionRoute slug="password" action="edit"><ChangePassword /></PermissionRoute></Suspense>} />
+          <Route path="/admin/change-password" element={<Suspense fallback={<Loader />}><ChangePassword /></Suspense>} />
 
           {/* Access Denied */}
           <Route path="*" element={<Suspense fallback={<Loader />}><AccessDenied /></Suspense>} />

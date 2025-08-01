@@ -243,7 +243,15 @@ function AddRoleUser() {
                                     type='text'
                                     placeholder="Email"
                                     value={values.email}
-                                    onChange={handleChange}
+                                    onChange={(e) => {
+                                        const lowercaseValue = e.target.value.toLowerCase();
+                                        handleChange({
+                                            target: {
+                                                name: 'email',
+                                                value: lowercaseValue,
+                                            }
+                                        });
+                                    }}
                                     onBlur={handleBlur}
                                     error={touched.email && Boolean(errors.email)}
                                     helperText={touched.email && errors.email}
