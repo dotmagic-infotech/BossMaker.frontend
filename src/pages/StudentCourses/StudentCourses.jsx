@@ -75,8 +75,10 @@ export default function StudentCourses() {
               flexDirection: "column",
             }}>
               <div>
-                <img src={v.course_image} srcSet={`${v.course_image}&dpr=2 2x`} loading="lazy" alt="" style={{ width: '150px', borderRadius: '0.5rem' }} />
-                <Typography variant="h6" fontWeight={600} lineHeight="1.5rem" sx={{ my: "0.5rem" }}>{v.title}</Typography>
+                {v.course_image &&
+                  <img src={v.course_image} srcSet={`${v.course_image}&dpr=2 2x`} loading="lazy" alt="" style={{ width: '150px', borderRadius: '0.5rem', marginBottom: "0.5rem" }} />
+                }
+                <Typography variant="h6" fontWeight={600} lineHeight="1.5rem" sx={{ mb: "0.5rem" }}>{v.title}</Typography>
                 <Typography variant='caption' style={{ fontWeight: "500", fontSize: "16px" }}>{v.category_id?.name}</Typography>
                 <Typography variant="body2" sx={{
                   mt: "0.5rem",
