@@ -14,9 +14,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import * as Yup from 'yup';
 import { Formik, Form } from 'formik';
 
-// Custom Imports
+// Custom Component
 import { useCategory } from '../../context/CategoryContext';
-import Dropzone from '../../components/DropZone/Dropzone';
 import { useApiRequest } from '../../components/UseApiRequest/useApiRequest';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import { useAuth } from '../../context/AuthContext';
@@ -143,6 +142,7 @@ function AddCourse() {
         instructor_ids: user?.user_type === 1 ? Yup.string().required("Instructor required") : Yup.string(),
         participant_ids: user?.user_type === 2 ? Yup.array().min(1, "At least one participant required") : Yup.array(),
         category: Yup.string().required("Category required"),
+        course_image: Yup.mixed().required("Course Image required"),
     });
 
     const handleSubmit = async (values) => {
@@ -428,6 +428,9 @@ function AddCourse() {
                                             }}
                                         />
                                     </Box>
+                                    {touched.course_image && Boolean(errors.course_image) && (
+                                        <FormHelperText error>{errors.course_image}</FormHelperText>
+                                    )}
                                 </FormControl>
                             </Box>
 
