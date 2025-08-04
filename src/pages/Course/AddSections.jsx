@@ -12,6 +12,7 @@ import * as Yup from 'yup';
 import { Formik, Form } from 'formik';
 
 const initialValues = {
+    _id: "",
     title: '',
     lesson: '',
     image: [],
@@ -125,6 +126,7 @@ export default function AddSections({ open, handleClose, courseRecord, setCourse
     useEffect(() => {
         if (selectedSection) {
             setFormData({
+                _id: selectedSection._id || '',
                 title: selectedSection.title || '',
                 lesson: selectedSection.lesson || '',
                 image: selectedSection.image || [],

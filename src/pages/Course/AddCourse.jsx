@@ -186,6 +186,7 @@ function AddCourse() {
 
                 for (const section of values.sections) {
                     const uploadedSection = {
+                        _id: section._id || null,
                         title: section.title,
                         lesson: section.lesson,
                         image: [],
