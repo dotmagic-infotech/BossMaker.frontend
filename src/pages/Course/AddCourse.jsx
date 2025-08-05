@@ -21,17 +21,6 @@ import { useToast } from '../../components/ToastProvider/ToastProvider';
 import { useAuth } from '../../context/AuthContext';
 import AddSections from './AddSections';
 
-const initialValues = {
-    title: '',
-    description: '',
-    sections: [],
-    category: "",
-    status: "active",
-    instructor_ids: "",
-    participant_ids: [],
-    course_image: [],
-};
-
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
 const MenuProps = {
@@ -67,15 +56,21 @@ function AddCourse() {
 
     // State
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState(initialValues);
+    const [formData, setFormData] = useState({
+        title: '',
+        description: '',
+        category: "",
+        status: "active",
+        instructor_ids: "",
+        participant_ids: [],
+        course_image: [],
+        sections: [],
+    });
+    const [sectionFormData, setSectionFormData] = useState([]);
     const [category, setCategory] = useState([]);
     const [open, setOpen] = useState(false);
     const [removeFile, setRemoveFile] = useState([]);
     const [selectedSection, setSelectedSection] = useState(null);
-
-    console.log("removeFile::", removeFile)
-
-    console.log("formData", formData);
 
     const fetchUserByCategory = async (id) => {
         try {
@@ -103,6 +98,7 @@ function AddCourse() {
                 course.course_image = course.course_image;
                 course.status = course.status === true ? "active" : "inactive";
 
+                setSectionFormData(course.sections || []);
                 setFormData(course);
 
                 if (user?.user_type === 1 && course.instructor_ids) {
@@ -156,7 +152,7 @@ function AddCourse() {
             description: values.description,
             category_id: values.category,
             status: values.status === 'active',
-            sections: values.sections || [],
+            sections: sectionFormData || [],
             ...(user?.user_type === 1
                 ? { instructor_ids: values.instructor_ids }
                 : { participant_ids: JSON.stringify(values.participant_ids) }
@@ -181,10 +177,10 @@ function AddCourse() {
                 passData.course_image = values.course_image;
             }
 
-            if (Array.isArray(values.sections) && values.sections.length > 0) {
+            if (Array.isArray(sectionFormData) && sectionFormData.length > 0) {
                 const uploadedSections = [];
 
-                for (const section of values.sections) {
+                for (const section of sectionFormData) {
                     const uploadedSection = {
                         _id: section._id || null,
                         title: section.title,
@@ -471,10 +467,10 @@ function AddCourse() {
                                 </FormControl>
                             </Box>
 
-                            {/* Section Description */}
+                            {/* Sections */}
                             <Box>
-                                {formData?.sections.length > 0 && <Typography sx={{ mx: 0.5, mb: 0.4 }}>Sections</Typography>}
-                                {formData?.sections.length > 0 && formData?.sections.map((section, index) => (
+                                {sectionFormData?.length > 0 && <Typography sx={{ mx: 0.5, mb: 0.4 }}>Sections</Typography>}
+                                {sectionFormData?.length > 0 && sectionFormData.map((section, index) => (
                                     <Box key={index} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", my: 1, p: 2, backgroundColor: '#f9f9f9', border: "1px solid #ccc", borderRadius: "8px" }}>
                                         <Box>
                                             <Typography variant="h6">{section.title}</Typography>
@@ -485,8 +481,8 @@ function AddCourse() {
                                             </Button>
                                             <Button variant="outlined" color="error" startIcon={<DeleteOutlineOutlinedIcon />}
                                                 onClick={() => {
-                                                    const updatedSections = formData?.sections.filter((s) => s !== section);
-                                                    setFormData({ ...formData, sections: updatedSections });
+                                                    const updatedSections = sectionFormData.filter((s) => s !== section);
+                                                    setSectionFormData(updatedSections);
                                                 }}
                                             >
                                                 Delete
@@ -519,12 +515,10 @@ function AddCourse() {
                     )}
                 </Formik>
             </Grid>
-
             <AddSections
                 open={open}
-                courseRecord={formData}
-                setCourseRecord={setFormData}
                 handleClose={handleClose}
+                setSectionFormData={setSectionFormData}
                 selectedSection={selectedSection}
                 setRemoveFile={setRemoveFile}
             />

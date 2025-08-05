@@ -11,15 +11,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import * as Yup from 'yup';
 import { Formik, Form } from 'formik';
 
-const initialValues = {
-    _id: "",
-    title: '',
-    lesson: '',
-    image: [],
-    video: [],
-    document: [],
-};
-
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
     clipPath: 'inset(50%)',
@@ -61,11 +52,7 @@ const UploadField = ({ label, name, accept, icon, values, touched, errors, setFi
                         display="flex"
                         alignItems="center"
                         gap={1}
-                        sx={{
-                            position: 'relative', border: '1px solid #ccc', borderRadius: '8px',
-                            padding: '8px 12px', backgroundColor: '#f9f9f9',
-                            width: name === 'image' ? '146px' : 'auto', cursor: 'pointer',
-                        }}
+                        sx={{ position: 'relative', border: '1px solid #ccc', borderRadius: '8px', padding: '8px 12px', backgroundColor: '#f9f9f9', width: name === 'image' ? '146px' : 'auto', cursor: 'pointer' }}
                         onClick={() => {
                             const fileUrl = file.preview || `${import.meta.env.VITE_API_URL}/${file?.file_path}`;
 
@@ -119,13 +106,22 @@ const UploadField = ({ label, name, accept, icon, values, touched, errors, setFi
     </FormControl>
 );
 
-export default function AddSections({ open, handleClose, courseRecord, setCourseRecord, selectedSection, setRemoveFile }) {
+export default function AddSections({ open, handleClose, setSectionFormData, selectedSection, setRemoveFile }) {
+
+    // State
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState(initialValues);
+    const [formValues, setFormValues] = useState({
+        _id: '',
+        title: '',
+        lesson: '',
+        image: [],
+        video: [],
+        document: []
+    });
 
     useEffect(() => {
         if (selectedSection) {
-            setFormData({
+            setFormValues({
                 _id: selectedSection._id || '',
                 title: selectedSection.title || '',
                 lesson: selectedSection.lesson || '',
@@ -134,7 +130,14 @@ export default function AddSections({ open, handleClose, courseRecord, setCourse
                 document: selectedSection.document || [],
             });
         } else {
-            setFormData(initialValues);
+            setFormValues({
+                _id: '',
+                title: '',
+                lesson: '',
+                image: [],
+                video: [],
+                document: []
+            });
         }
     }, [selectedSection]);
 
@@ -147,23 +150,29 @@ export default function AddSections({ open, handleClose, courseRecord, setCourse
 
     const handleSubmit = async (values) => {
         setLoading(true);
-        if (selectedSection) {
-            setCourseRecord(prev => ({
-                ...prev,
-                sections: prev.sections.map(section =>
+
+        setSectionFormData(prev => {
+            const sections = Array.isArray(prev) ? prev : [];
+
+            if (selectedSection) {
+                return sections.map(section =>
                     section._id === selectedSection._id ? { ...section, ...values } : section
-                )
-            }));
-        } else {
-            const newSectionId = courseRecord?.sections?.length + 1 || 1;
-            setCourseRecord(prev => ({
-                ...prev,
-                sections: [...prev.sections, { ...values, _id: newSectionId }]
-            }));
-        }
+                );
+            } else {
+                return [...sections, { ...values, _id: Date.now().toString() }];
+            }
+        });
 
         setLoading(false);
         handleClose();
+        setFormValues({
+            _id: '',
+            title: '',
+            lesson: '',
+            image: [],
+            video: [],
+            document: []
+        });
     };
 
     return (
@@ -176,7 +185,7 @@ export default function AddSections({ open, handleClose, courseRecord, setCourse
             </DialogTitle>
             <DialogContent dividers>
                 <Formik
-                    initialValues={formData}
+                    initialValues={formValues}
                     enableReinitialize
                     validationSchema={validationSchema}
                     onSubmit={handleSubmit}
