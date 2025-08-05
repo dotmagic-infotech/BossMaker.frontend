@@ -1,1 +1,0 @@
-import{j as e,B as t,T as s}from"./index-CVsBOibh.js";const n=()=>e.jsxs(t,{style:{padding:"1.25rem",height:"100%",gap:"0.5rem",display:"flex",justifyContent:"center",alignItems:"center",flexDirection:"column"},children:[e.jsx(s,{variant:"h4",children:"🚫 Access Denied"}),e.jsx(s,{children:"You do not have permission to view this page."})]});export{n as default};
