@@ -13,7 +13,9 @@ export default function OpenCoursespop({ open, handleClose, selectedCourse }) {
                 </IconButton>
             </DialogTitle>
             <DialogContent dividers>
-                <img src={selectedCourse?.course_image} alt={selectedCourse?.title} style={{ width: '500px', height: "500px", borderRadius: '0.5rem', marginBottom: '1rem' }} />
+                {selectedCourse?.course_image?.file_path &&
+                  <img src={`${import.meta.env.VITE_API_URL}/${selectedCourse?.course_image?.file_path}`} loading="lazy" alt={selectedCourse?.course_image?.file_path} style={{ width: '100%', borderRadius: '0.5rem', marginBottom: "0.5rem" }} />
+                }
                 <Typography variant="h6" gutterBottom>{selectedCourse?.category_id?.name}</Typography>
                 <Typography variant="body1">{selectedCourse?.description}</Typography>
             </DialogContent>

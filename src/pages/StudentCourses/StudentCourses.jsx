@@ -75,8 +75,8 @@ export default function StudentCourses() {
               flexDirection: "column",
             }}>
               <div>
-                {v.course_image &&
-                  <img src={v.course_image} srcSet={`${v.course_image}&dpr=2 2x`} loading="lazy" alt="" style={{ width: '150px', borderRadius: '0.5rem', marginBottom: "0.5rem" }} />
+                {v.course_image?.file_path &&
+                  <img src={`${import.meta.env.VITE_API_URL}/${v.course_image?.file_path}`} loading="lazy" alt={v.course_image?.file_path} style={{ width: '100%', height: '180px', borderRadius: '0.5rem', marginBottom: "0.5rem" }} />
                 }
                 <Typography variant="h6" fontWeight={600} lineHeight="1.5rem" sx={{ mb: "0.5rem" }}>{v.title}</Typography>
                 <Typography variant='caption' style={{ fontWeight: "500", fontSize: "16px" }}>{v.category_id?.name}</Typography>
