@@ -52,12 +52,6 @@ export default function StudentCourses() {
     fetchCourses();
   }, []);
 
-  const courses = [
-    { _id: 1, name: "Bachelor of Commerce", category: "Mangement", description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.", image: "https://images.unsplash.com/photo-1527549993586-dff825b37782?auto=format&fit=crop&w=286", instructor: "Razz Antala", status: true },
-    { _id: 2, name: "Master of Science in Computer Science", category: "BMU", description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.", image: "https://images.unsplash.com/photo-1527549993586-dff825b37782?auto=format&fit=crop&w=286", instructor: "Razz Antala", status: false },
-    { _id: 3, name: "Master of Business Administration in Cybersecurity Leadership", category: "BMU", description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.", image: "https://images.unsplash.com/photo-1527549993586-dff825b37782?auto=format&fit=crop&w=286", instructor: "Razz Antala", status: true},
-  ]
-
   return (
     <Box style={{ padding: "1.25rem", height: "100%", overflowY: "auto" }}>
       <Typography variant="h4" style={{ marginBottom: "1rem" }}>
@@ -69,7 +63,7 @@ export default function StudentCourses() {
         spacing={{ xs: 2, md: 3 }}
         columns={{ xs: 4, sm: 8, md: 12 }}
       >
-        {courses.map((v, index) => (
+        {course.map((v, index) => (
           <Grid key={index} size={{ xs: 12, sm: 12, md: 4 }}>
             <Card sx={{
               bgcolor: "rgb(245, 245, 245)",
@@ -81,9 +75,11 @@ export default function StudentCourses() {
               flexDirection: "column",
             }}>
               <div>
-                <img src={v.image} srcSet={`${v.image}&dpr=2 2x`} loading="lazy" alt="" style={{ width: '150px', borderRadius: '0.5rem' }} />
-                <Typography variant="h6" fontWeight={600} lineHeight="1.5rem" sx={{ my: "0.5rem" }}>{v.name}</Typography>
-                <Typography variant='caption' style={{ fontWeight: "500", fontSize: "16px" }}>{v.category}</Typography>
+                {v.course_image?.file_path &&
+                  <img src={`${import.meta.env.VITE_API_URL}/${v.course_image?.file_path}`} loading="lazy" alt={v.course_image?.file_path} style={{ width: '100%', height: '180px', borderRadius: '0.5rem', marginBottom: "0.5rem" }} />
+                }
+                <Typography variant="h6" fontWeight={600} lineHeight="1.5rem" sx={{ mb: "0.5rem" }}>{v.title}</Typography>
+                <Typography variant='caption' style={{ fontWeight: "500", fontSize: "16px" }}>{v.category_id?.name}</Typography>
                 <Typography variant="body2" sx={{
                   mt: "0.5rem",
                   display: '-webkit-box',

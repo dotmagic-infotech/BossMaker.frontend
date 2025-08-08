@@ -42,7 +42,7 @@ const ChangePassword = React.lazy(() => import('./pages/Settings/ChangePassword'
 import './App.css'
 
 function App() {
-  
+
   return (
     <Routes>
       <Route path="/admin/signin" element={<Suspense fallback={<MainLoader />}><SignIn /></Suspense>} />
