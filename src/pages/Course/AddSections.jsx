@@ -23,7 +23,7 @@ const VisuallyHiddenInput = styled('input')({
     width: 1,
 });
 
-const UploadField = ({ label, name, accept, icon, values, touched, errors, setFieldValue, setRemoveFile }) => (
+const UploadField = ({ label, name, accept, icon, values, setFieldValue, setRemoveFile }) => (
     <FormControl fullWidth>
         <Typography sx={{ mx: 0.5, mb: 0.4 }}>{label}</Typography>
         <Button component="label" variant="outlined">
