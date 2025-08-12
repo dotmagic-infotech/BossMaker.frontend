@@ -41,9 +41,6 @@ const UploadField = ({ label, name, accept, icon, values, touched, errors, setFi
                 }}
             />
         </Button>
-        {touched[name] && Boolean(errors[name]) && (
-            <FormHelperText error>{errors[name]}</FormHelperText>
-        )}
         {values[name]?.length > 0 && (
             <Box mt={2} display="flex" flexWrap="wrap" gap={2}>
                 {values[name].map((file, index) => (
@@ -77,7 +74,8 @@ const UploadField = ({ label, name, accept, icon, values, touched, errors, setFi
                                 color: '#fff', bgcolor: 'black',
                                 '&:hover': { bgcolor: 'black' }
                             }}
-                            onClick={() => {
+                            onClick={(e) => {
+                                e.stopPropagation();
                                 const updated = values[name].filter((_, i) => i !== index);
                                 setFieldValue(name, updated);
                                 if (file._id) setRemoveFile((prev) => [...prev, file._id]);
@@ -142,10 +140,19 @@ export default function AddSections({ open, handleClose, setSectionFormData, sel
     }, [selectedSection]);
 
     const validationSchema = Yup.object({
-        title: Yup.string().required('Section Title is required'),
-        image: Yup.array().min(1, 'At least one image is required').required(),
-        video: Yup.array().min(1, 'At least one video is required').required(),
-        document: Yup.array().min(1, 'At least one document is required').required(),
+        title: Yup.string().required("Section Title is required"),
+        image: Yup.array().test(
+            "oneOfRequired",
+            "At least one media file (image, video, or document) is required",
+            function () {
+                const { image, video, document } = this.parent;
+                return (
+                    (Array.isArray(image) && image.length > 0) ||
+                    (Array.isArray(video) && video.length > 0) ||
+                    (Array.isArray(document) && document.length > 0)
+                );
+            }
+        ),
     });
 
     const handleSubmit = async (values) => {
@@ -223,8 +230,6 @@ export default function AddSections({ open, handleClose, setSectionFormData, sel
                                 accept="image/*"
                                 icon={null}
                                 values={values}
-                                touched={touched}
-                                errors={errors}
                                 setFieldValue={setFieldValue}
                                 setRemoveFile={setRemoveFile}
                             />
@@ -235,8 +240,6 @@ export default function AddSections({ open, handleClose, setSectionFormData, sel
                                 accept="video/*"
                                 icon={<PlayCircleOutlinedIcon fontSize="large" />}
                                 values={values}
-                                touched={touched}
-                                errors={errors}
                                 setFieldValue={setFieldValue}
                                 setRemoveFile={setRemoveFile}
                             />
@@ -247,11 +250,15 @@ export default function AddSections({ open, handleClose, setSectionFormData, sel
                                 accept="application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                                 icon={<PictureAsPdfOutlinedIcon fontSize="large" />}
                                 values={values}
-                                touched={touched}
-                                errors={errors}
                                 setFieldValue={setFieldValue}
                                 setRemoveFile={setRemoveFile}
                             />
+
+                            {errors.image && (
+                                <FormHelperText sx={{ mt: 0.5, mx: 0 }} error>
+                                    {errors.image}
+                                </FormHelperText>
+                            )}
 
                             <Divider sx={{ mx: -3 }} />
 
