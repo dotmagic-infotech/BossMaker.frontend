@@ -3,45 +3,38 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 // Mui Imports
-import { TextField, Box, Typography, FormControl, FormHelperText, Button, Grid, Select, MenuItem, Checkbox, ListItemText, ListItem } from '@mui/material';
+import { TextField, Box, Typography, FormControl, FormHelperText, Button, Grid, Select, MenuItem, Checkbox, ListItemText, ListItem, styled, IconButton } from '@mui/material';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import Radio from '@mui/joy/Radio';
 import CreateOutlinedIcon from '@mui/icons-material/CreateOutlined';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
+import CloseIcon from '@mui/icons-material/Close';
 
 // Third Party imports
 import * as Yup from 'yup';
 import { Formik, Form } from 'formik';
 
-// Custom Imports
+// Custom Component
 import { useCategory } from '../../context/CategoryContext';
-import Dropzone from '../../components/DropZone/Dropzone';
 import { useApiRequest } from '../../components/UseApiRequest/useApiRequest';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import { useAuth } from '../../context/AuthContext';
 import AddSections from './AddSections';
 
-const initialValues = {
-    title: '',
-    description: '',
-    sections: [],
-    category: "",
-    status: "active",
-    instructor_ids: "",
-    participant_ids: [],
-    image: null,
-};
+// Utils
+import { MenuProps } from '../../utils/appUtils';
 
-const ITEM_HEIGHT = 48;
-const ITEM_PADDING_TOP = 8;
-const MenuProps = {
-    PaperProps: {
-        style: {
-            maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-            width: 250,
-        },
-    },
-};
+const VisuallyHiddenInput = styled('input')({
+    clip: 'rect(0 0 0 0)',
+    clipPath: 'inset(50%)',
+    height: 1,
+    overflow: 'hidden',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    whiteSpace: 'nowrap',
+    width: 1,
+});
 
 function AddCourse() {
 
@@ -55,13 +48,21 @@ function AddCourse() {
 
     // State
     const [loading, setLoading] = useState(false);
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [formData, setFormData] = useState(initialValues);
+    const [formData, setFormData] = useState({
+        title: '',
+        description: '',
+        category: "",
+        status: "active",
+        instructor_ids: "",
+        participant_ids: [],
+        course_image: [],
+        sections: [],
+    });
+    const [sectionFormData, setSectionFormData] = useState([]);
     const [category, setCategory] = useState([]);
     const [open, setOpen] = useState(false);
+    const [removeFile, setRemoveFile] = useState([]);
     const [selectedSection, setSelectedSection] = useState(null);
-
-    console.log("Update Data", formData);
 
     const fetchUserByCategory = async (id) => {
         try {
@@ -86,9 +87,10 @@ function AddCourse() {
                 course.category = course.category_id?._id;
                 course.instructor_ids = course.instructor_ids || "";
                 course.participant_ids = course.participant_ids?.map(role => role._id) || [];
-                course.image = course.course_image;
+                course.course_image = course.course_image;
                 course.status = course.status === true ? "active" : "inactive";
 
+                setSectionFormData(course.sections || []);
                 setFormData(course);
 
                 if (user?.user_type === 1 && course.instructor_ids) {
@@ -125,87 +127,114 @@ function AddCourse() {
         setSelectedSection(null);
     };
 
-    const handleDrop = (acceptedFiles) => {
-        const file = acceptedFiles[0];
-        if (file) {
-            file.preview = URL.createObjectURL(file);
-            setSelectedFile(file);
-        }
-    };
-
     const validationSchema = Yup.object({
         title: Yup.string().required("Course Title required"),
         description: Yup.string().required("Description required"),
         instructor_ids: user?.user_type === 1 ? Yup.string().required("Instructor required") : Yup.string(),
         participant_ids: user?.user_type === 2 ? Yup.array().min(1, "At least one participant required") : Yup.array(),
         category: Yup.string().required("Category required"),
+        course_image: Yup.mixed().required("Course Image required"),
     });
 
     const handleSubmit = async (values) => {
-        const formData = new FormData();
-
-        formData.append('title', values.title);
-        formData.append('description', values.description);
-        formData.append('category_id', values.category);
-        formData.append('status', values.status === 'active' ? true : false);
-
-        if (user?.user_type === 1) {
-            formData.append('instructor_ids', values.instructor_ids);
-        } else {
-            formData.append('participant_ids', JSON.stringify(values.participant_ids));
-        }
-
-        if (selectedFile instanceof File) {
-            formData.append('course_image', selectedFile ? selectedFile : null);
-        }
-
-        const sections = values.sections || [];
-
-        sections.forEach((section, secIndex) => {
-
-            formData.append(`sections[${secIndex}].title`, section.title);
-            formData.append(`sections[${secIndex}].lesson`, section.lesson);
-
-            section.image?.forEach((file, fileIndex) => {
-                if (file instanceof File) {
-                    formData.append(`sections[${secIndex}].image`, file);
-                }
-            });
-
-            section.video?.forEach((file, fileIndex) => {
-                if (file instanceof File) {
-                    formData.append(`sections[${secIndex}].video`, file);
-                }
-            });
-
-            section.document?.forEach((file, fileIndex) => {
-                if (file instanceof File) {
-                    formData.append(`sections[${secIndex}].document`, file);
-                }
-            });
-        });
-
         setLoading(true);
 
+        const passData = {
+            title: values.title,
+            description: values.description,
+            category_id: values.category,
+            status: values.status === 'active',
+            sections: sectionFormData || [],
+            ...(user?.user_type === 1
+                ? { instructor_ids: values.instructor_ids }
+                : { participant_ids: JSON.stringify(values.participant_ids) }
+            ),
+        };
+
         try {
-            if (id) {
-                const { data, status, error } = await apiRequest(`/api/course/update/${id}`, 'PUT', formData, true);
-                if (status === 200) {
-                    showToast(data.message, "success");
-                    navigate("/admin/course");
+            if (values.course_image instanceof File) {
+                const imageFormData = new FormData();
+                imageFormData.append("file", values.course_image);
+
+                const { data: uploadRes, status: uploadStatus, error: uploadError } = await apiRequest(`/api/uploadFile`, 'POST', imageFormData, true);
+
+                if (uploadStatus === 200) {
+                    passData.course_image = uploadRes.data;
                 } else {
-                    showToast(error, "error");
+                    showToast(uploadError || "Image upload failed", "error");
+                    setLoading(false);
+                    return;
                 }
             } else {
-                const { data, status, error } = await apiRequest(`/api/course/create`, 'POST', formData, true);
-                if (status === 200) {
-                    showToast(data.message, "success");
-                    navigate("/admin/course");
-                } else {
-                    showToast(error, "error");
+                passData.course_image = values.course_image;
+            }
+
+            if (Array.isArray(sectionFormData) && sectionFormData.length > 0) {
+                const uploadedSections = [];
+
+                for (const section of sectionFormData) {
+                    const uploadedSection = {
+                        _id: section._id || null,
+                        title: section.title,
+                        lesson: section.lesson,
+                        image: [],
+                        video: [],
+                        document: [],
+                    };
+
+                    for (const type of ["image", "video", "document"]) {
+                        if (Array.isArray(section[type])) {
+                            for (const file of section[type]) {
+                                if (file instanceof File) {
+                                    const fileFormData = new FormData();
+                                    fileFormData.append("file", file);
+
+                                    const { data: uploadRes, status: uploadStatus, error: uploadError } = await apiRequest(`/api/uploadFile`, 'POST', fileFormData, true);
+
+                                    if (uploadStatus === 200) {
+                                        uploadedSection[type].push(uploadRes.data);
+                                    } else {
+                                        showToast(uploadError || `${type} upload failed`, "error");
+                                        setLoading(false);
+                                        return;
+                                    }
+                                } else {
+                                    uploadedSection[type].push(file);
+                                }
+                            }
+                        }
+                    }
+
+                    uploadedSections.push(uploadedSection);
+                }
+
+                passData.sections = uploadedSections;
+            }
+
+            // Delete removed files
+            if (Array.isArray(removeFile) && removeFile.length > 0) {
+                const { status: deleteStatus, error: deleteError } =
+                    await apiRequest(`/api/uploadFile/delete`, 'DELETE', { ids: removeFile });
+
+                if (deleteStatus !== 200) {
+                    showToast(deleteError || "Failed to delete files.", "error");
                 }
             }
-        } catch (error) {
+
+            // Save or update course
+            const endpoint = id ? `/api/course/update/${id}` : `/api/course/create`;
+            const method = id ? 'PUT' : 'POST';
+
+            const { data, status, error } = await apiRequest(endpoint, method, passData);
+
+            if (status === 200) {
+                showToast(data.message, "success");
+                setRemoveFile([]);
+                navigate("/admin/course");
+            } else {
+                showToast(error || "Course submission failed", "error");
+            }
+        } catch (err) {
             showToast("Failed to update course.", "error");
         } finally {
             setLoading(false);
@@ -376,21 +405,64 @@ function AddCourse() {
                                 </FormControl>
                                 <FormControl fullWidth>
                                     <Typography sx={{ mx: 0.5, mb: 0.4 }}>Course Image</Typography>
-                                    <Dropzone
-                                        onDrop={handleDrop}
-                                        mode="Drag"
-                                        preview={true}
-                                        selectedFile={selectedFile?.preview || formData.image}
-                                        multiple={true}
-                                        accept={{ 'image/*': [], 'video/*': [], 'application/pdf': [] }}
-                                    />
+                                    <Box component="label" role={undefined} tabIndex={-1} sx={{ border: '1px dashed #ccc', borderRadius: '8px', p: "6px" }}>
+                                        {(values.course_image?.preview || values.course_image?.file_path) ? (
+                                            <Box sx={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
+                                                <img
+                                                    src={values.course_image.preview || `${import.meta.env.VITE_API_URL}/${values.course_image?.file_path}`}
+                                                    alt="Course Preview"
+                                                    style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 8 }}
+                                                />
+                                                <IconButton sx={{ position: 'absolute', top: 0, right: 0, padding: '4px', color: '#fff', bgcolor: 'rgba(0,0,0,0.6)', '&:hover': { bgcolor: 'black' } }}
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        if (values.course_image?._id) {
+                                                            setRemoveFile((prev) => [...prev, values.course_image?._id]);
+                                                        }
+                                                        setFieldValue("course_image", null);
+                                                    }}
+                                                >
+                                                    <CloseIcon fontSize="small" />
+                                                </IconButton>
+                                            </Box>
+                                        ) : (
+                                            <Box sx={{ py: 4, cursor: "pointer" }}>
+                                                <Typography textAlign="center" fontWeight={700}>
+                                                    Drop file here or click to upload
+                                                </Typography>
+                                                <Typography textAlign="center">
+                                                    JPG, PNG, PDF, or Video files. Max file size 3MB.
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                        <VisuallyHiddenInput
+                                            type="file"
+                                            id="course_image"
+                                            name='course_image'
+                                            accept='image/*'
+                                            onBlur={handleBlur}
+                                            onChange={(event) => {
+                                                const file = event.currentTarget.files[0];
+                                                if (file) {
+                                                    const imageWithPreview = Object.assign(file, {
+                                                        preview: URL.createObjectURL(file),
+                                                    });
+
+                                                    setFieldValue("course_image", imageWithPreview);
+                                                }
+                                            }}
+                                        />
+                                    </Box>
+                                    {touched.course_image && Boolean(errors.course_image) && (
+                                        <FormHelperText error>{errors.course_image}</FormHelperText>
+                                    )}
                                 </FormControl>
                             </Box>
 
-                            {/* Section Description */}
+                            {/* Sections */}
                             <Box>
-                                {formData?.sections.length > 0 && <Typography sx={{ mx: 0.5, mb: 0.4 }}>Sections</Typography>}
-                                {formData?.sections.length > 0 && formData?.sections.map((section, index) => (
+                                {sectionFormData?.length > 0 && <Typography sx={{ mx: 0.5, mb: 0.4 }}>Sections</Typography>}
+                                {sectionFormData?.length > 0 && sectionFormData.map((section, index) => (
                                     <Box key={index} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", my: 1, p: 2, backgroundColor: '#f9f9f9', border: "1px solid #ccc", borderRadius: "8px" }}>
                                         <Box>
                                             <Typography variant="h6">{section.title}</Typography>
@@ -401,8 +473,8 @@ function AddCourse() {
                                             </Button>
                                             <Button variant="outlined" color="error" startIcon={<DeleteOutlineOutlinedIcon />}
                                                 onClick={() => {
-                                                    const updatedSections = formData?.sections.filter((s) => s !== section);
-                                                    setFormData({ ...formData, sections: updatedSections });
+                                                    const updatedSections = sectionFormData.filter((s) => s !== section);
+                                                    setSectionFormData(updatedSections);
                                                 }}
                                             >
                                                 Delete
@@ -435,13 +507,12 @@ function AddCourse() {
                     )}
                 </Formik>
             </Grid>
-
             <AddSections
                 open={open}
-                courseRecord={formData}
-                setCourseRecord={setFormData}
                 handleClose={handleClose}
+                setSectionFormData={setSectionFormData}
                 selectedSection={selectedSection}
+                setRemoveFile={setRemoveFile}
             />
         </Box>
     )

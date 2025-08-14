@@ -3,14 +3,14 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom';
 
 // Mui Imports
-import { TextField, Box, Avatar, Typography, FormControl, FormHelperText, Button, Divider, IconButton, InputAdornment, ListItem } from '@mui/material';
+import { TextField, Box, Avatar, Typography, FormControl, FormHelperText, Button, Divider, IconButton, InputAdornment, ListItem, Select, ListItemText, MenuItem } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import Radio from '@mui/joy/Radio';
 
 // Mui Icons
 import { Visibility, VisibilityOff } from '@mui/icons-material';
+import Radio from '@mui/joy/Radio';
 
 // Formik + Yup
 import { Formik, Form } from 'formik';
@@ -25,19 +25,24 @@ import { stringAvatar } from '../../utils/appUtils';
 import { useToast } from '../../components/ToastProvider/ToastProvider';
 import { useApiRequest } from '../../components/UseApiRequest/useApiRequest';
 import { useAuth } from '../../context/AuthContext';
+import { useCategory } from '../../context/CategoryContext';
+
+// Utils
+import { MenuProps } from '../../utils/appUtils';
 
 const initialValues = {
     first_name: '',
     last_name: '',
     email: '',
     mobile_no: '',
-    dob: null,
     status: 'active',
+    dob: null,
+    instructor_ids: "",
     role: '',
     password: '',
 };
 
-function AddRoleUser() {
+function AddParticipantsAdmin() {
 
     // Hooks
     const { id } = useParams();
@@ -45,8 +50,7 @@ function AddRoleUser() {
     const navigate = useNavigate();
     const { showToast } = useToast();
     const apiRequest = useApiRequest();
-
-    console.log("user::", user)
+    const { instructors, refetchInstructors } = useCategory();
 
     // State
     const [loading, setLoading] = useState(false);
@@ -64,6 +68,7 @@ function AddRoleUser() {
 
                 user.status = user.status === true ? "active" : "inactive";
                 user.dob = user.dob ? dayjs(user.dob) : null;
+
                 if (user.user_type === 1) {
                     user.role = 'Admin';
                 } else if (user.user_type === 2) {
@@ -85,7 +90,10 @@ function AddRoleUser() {
 
     useEffect(() => {
         if (id) {
+            refetchInstructors();
             fetchUser();
+        } else {
+            refetchInstructors();
         }
     }, [id]);
 
@@ -119,11 +127,12 @@ function AddRoleUser() {
 
         formData.append('first_name', values.first_name);
         formData.append('last_name', values.last_name);
-        formData.append('status', values.status === 'active' ? true : false);
         formData.append('email', values.email);
         formData.append('mobile_no', values.mobile_no);
+        formData.append('instructor_ids', values.instructor_ids);
+        formData.append('status', values.status === 'active' ? true : false);
         formData.append('password', values.password);
-        formData.append('user_type', user?.user_type === 1 ? 2 : 3);
+        formData.append('user_type', 3);
         formData.append('dob', values.dob ? dayjs(values.dob).format('YYYY-MM-DD') : '');
 
         if (selectedFile instanceof File) {
@@ -137,7 +146,7 @@ function AddRoleUser() {
                 const { data, status, error } = await apiRequest(`/api/user/update/${id}`, 'PUT', formData, true);
                 if (status === 200) {
                     showToast(data.message, "success");
-                    navigate("/admin/role-user");
+                    navigate("/admin/participants");
                 } else {
                     showToast(error, "error");
                 }
@@ -145,13 +154,13 @@ function AddRoleUser() {
                 const { data, status, error } = await apiRequest(`/api/user/create`, 'POST', formData, true);
                 if (status === 200) {
                     showToast(data.message, "success");
-                    navigate("/admin/role-user");
+                    navigate("/admin/participants");
                 } else {
                     showToast(error, "error");
                 }
             }
         } catch (error) {
-            showToast("Failed to update user.", "error");
+            showToast("Failed to update participant.", "error");
         } finally {
             setLoading(false);
         }
@@ -160,7 +169,7 @@ function AddRoleUser() {
     return (
         <div style={{ padding: "1.25rem", height: "100%", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <Typography variant='subtitle1' fontSize="1.5rem" fontWeight={500}>Basic User Detail</Typography>
+                <Typography variant='subtitle1' fontSize="1.5rem" fontWeight={500}>Basic Participant Detail</Typography>
             </div>
             <Formik
                 initialValues={formData}
@@ -243,15 +252,7 @@ function AddRoleUser() {
                                     type='text'
                                     placeholder="Email"
                                     value={values.email}
-                                    onChange={(e) => {
-                                        const lowercaseValue = e.target.value.toLowerCase();
-                                        handleChange({
-                                            target: {
-                                                name: 'email',
-                                                value: lowercaseValue,
-                                            }
-                                        });
-                                    }}
+                                    onChange={handleChange}
                                     onBlur={handleBlur}
                                     error={touched.email && Boolean(errors.email)}
                                     helperText={touched.email && errors.email}
@@ -272,15 +273,35 @@ function AddRoleUser() {
                         <Typography variant='subtitle1' fontSize="1.5rem" fontWeight={500}>Position Preference Detail</Typography>
 
                         <Box sx={{ display: "flex", gap: "3rem", width: "100%" }}>
-                            <FormControl fullWidth error={Boolean(errors.dob)}>
-                                <Typography sx={{ mx: 0.5, mb: 0.4 }}>Date of Birth</Typography>
-                                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    <DatePicker
-                                        id="dob"
-                                        value={values.dob}
-                                        onChange={(newValue) => setFieldValue('dob', newValue)}
-                                    />
-                                </LocalizationProvider>
+                            <FormControl fullWidth error={Boolean(errors.instructor_ids)}>
+                                <Typography sx={{ mx: 0.5, mb: 0.4 }}>Instructors</Typography>
+                                <Select
+                                    displayEmpty
+                                    id="instructor_ids"
+                                    name="instructor_ids"
+                                    MenuProps={MenuProps}
+                                    value={values.instructor_ids || []}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    renderValue={(selected) => {
+                                        if (!selected || selected.length === 0) {
+                                            return <span style={{ color: '#aaa' }}>Select Instructors</span>;
+                                        }
+                                        const person = instructors.find((n) => n._id === selected);
+                                        return person ? `${person.first_name} ${person.last_name}` : '';
+                                    }}
+                                >
+                                    <MenuItem disabled value=""><em>Select Instructors</em></MenuItem>
+                                    {instructors.map((person) => (
+                                        <MenuItem key={person._id} value={person._id}>
+                                            <ListItemText primary={`${person.first_name} ${person.last_name}`} />
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+
+                                {errors.instructor_ids && (
+                                    <FormHelperText>{errors.instructor_ids}</FormHelperText>
+                                )}
                             </FormControl>
                             <FormControl fullWidth>
                                 <Typography sx={{ mx: 0.5, mb: 0.4 }}>Role</Typography>
@@ -295,6 +316,20 @@ function AddRoleUser() {
                                     error={touched.role && Boolean(errors.role)}
                                     helperText={touched.role && errors.role}
                                 />
+                            </FormControl>
+                        </Box>
+                        <Box sx={{ display: "flex", gap: "3rem", width: "100%" }}>
+                            <FormControl fullWidth error={Boolean(errors.dob)}>
+                                <Typography sx={{ mx: 0.5, mb: 0.4 }}>Date of Birth</Typography>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        id="dob"
+                                        value={values.dob}
+                                        onChange={(newValue) => setFieldValue('dob', newValue)}
+                                    />
+                                </LocalizationProvider>
+                            </FormControl>
+                            <FormControl fullWidth>
                             </FormControl>
                         </Box>
 
@@ -334,7 +369,7 @@ function AddRoleUser() {
                                 Save
                             </Button>
                             <Button variant="contained" color="" sx={{ backgroundColor: "white", width: "100px", borderRadius: "10px", padding: "10px", fontWeight: "500", fontSize: "18px" }}
-                                onClick={() => navigate("/admin/role-user")}>
+                                onClick={() => navigate("/admin/participants")}>
                                 Cancel
                             </Button>
                         </Box>
@@ -345,4 +380,4 @@ function AddRoleUser() {
     )
 }
 
-export default AddRoleUser
+export default AddParticipantsAdmin

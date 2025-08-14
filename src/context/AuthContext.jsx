@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
                 try {
                     const decoded = jwtDecode(token);
                     setUser(decoded);
-                    console.log("Login User ->", decoded)
+                    // console.log("Login User ->", decoded)
                 } catch (err) {
                     console.error("Invalid token:", err);
                     localStorage.removeItem("bossmaker");

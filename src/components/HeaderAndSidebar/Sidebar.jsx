@@ -45,6 +45,12 @@ const Sidebar = () => {
       navigate: "/admin/role-user"
     },
     {
+      slug: "participantsadmin",
+      name: "Participants Management",
+      icon: <PeopleIcon />,
+      navigate: "/admin/participants"
+    },
+    {
       slug: "participants",
       name: "Participants",
       icon: <PeopleIcon />,

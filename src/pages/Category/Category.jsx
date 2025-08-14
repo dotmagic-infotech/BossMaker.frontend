@@ -25,16 +25,8 @@ import debounce from 'lodash/debounce';
 import { useAuth } from '../../context/AuthContext';
 import { useCategory } from '../../context/CategoryContext';
 
-const ITEM_HEIGHT = 48;
-const ITEM_PADDING_TOP = 8;
-const MenuProps = {
-    PaperProps: {
-        style: {
-            maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-            width: 250,
-        },
-    },
-};
+// Utils
+import { MenuProps } from '../../utils/appUtils';
 
 const initialValues = {
     _id: "",

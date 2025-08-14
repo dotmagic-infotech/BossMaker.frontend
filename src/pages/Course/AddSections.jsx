@@ -1,23 +1,15 @@
-// React imports
+// React Imports
 import { useEffect, useState } from 'react';
 
-// Mui imports
-import { Box, Button, Dialog, DialogContent, DialogTitle, Divider, FormControl, FormHelperText, IconButton, styled, TextField, Typography } from '@mui/material'
-import CloseIcon from '@mui/icons-material/Close';
+// Mui Imports
+import { Box, Button, Dialog, DialogContent, DialogTitle, Divider, FormControl, FormHelperText, IconButton, styled, TextField, Typography } from '@mui/material';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import PlayCircleOutlinedIcon from '@mui/icons-material/PlayCircleOutlined';
+import CloseIcon from '@mui/icons-material/Close';
 
-// Third Party imports
+// Formik Yup
 import * as Yup from 'yup';
 import { Formik, Form } from 'formik';
-
-const initialValues = {
-    title: '',
-    lesson: '',
-    image: [],
-    video: [],
-    document: [],
-};
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -31,112 +23,186 @@ const VisuallyHiddenInput = styled('input')({
     width: 1,
 });
 
-export default function AddSections({ open, handleClose, courseRecord, setCourseRecord, selectedSection }) {
+const UploadField = ({ label, name, accept, icon, values, setFieldValue, setRemoveFile }) => (
+    <FormControl fullWidth>
+        <Typography sx={{ mx: 0.5, mb: 0.4 }}>{label}</Typography>
+        <Button component="label" variant="outlined">
+            Upload {label}
+            <VisuallyHiddenInput
+                type="file"
+                accept={accept}
+                multiple
+                onChange={(e) => {
+                    const files = Array.from(e.currentTarget.files || []);
+                    const withPreview = files.map(file =>
+                        Object.assign(file, { preview: URL.createObjectURL(file) })
+                    );
+                    setFieldValue(name, [...(values[name] || []), ...withPreview]);
+                }}
+            />
+        </Button>
+        {values[name]?.length > 0 && (
+            <Box mt={2} display="flex" flexWrap="wrap" gap={2}>
+                {values[name].map((file, index) => (
+                    <Box
+                        key={index}
+                        display="flex"
+                        alignItems="center"
+                        gap={1}
+                        sx={{ position: 'relative', border: '1px solid #ccc', borderRadius: '8px', padding: '8px 12px', backgroundColor: '#f9f9f9', width: name === 'image' ? '146px' : 'auto', cursor: 'pointer' }}
+                        onClick={() => {
+                            const fileUrl = file.preview || `${import.meta.env.VITE_API_URL}/${file?.file_path}`;
 
-    // state
+                            if (name === 'video') {
+                                const w = window.open("");
+                                if (w) {
+                                    w.document.write(`
+                                        <video controls autoplay style="width:100%; height:100vh;">
+                                        <source src="${fileUrl}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                        </video>
+                                    `);
+                                }
+                            } else if (name === 'document') {
+                                window.open(fileUrl, '_blank');
+                            }
+                        }}
+                    >
+                        <IconButton
+                            sx={{
+                                position: 'absolute', top: '-11px', right: '-11px', padding: '4px',
+                                color: '#fff', bgcolor: 'black',
+                                '&:hover': { bgcolor: 'black' }
+                            }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const updated = values[name].filter((_, i) => i !== index);
+                                setFieldValue(name, updated);
+                                if (file._id) setRemoveFile((prev) => [...prev, file._id]);
+                            }}
+                        >
+                            <CloseIcon fontSize="small" />
+                        </IconButton>
+                        {name === 'image' ? (
+                            <img
+                                src={file.preview || `${import.meta.env.VITE_API_URL}/${file?.file_path}`}
+                                alt="preview"
+                                style={{ width: "100%", maxHeight: "180px", objectFit: "contain" }}
+                            />
+                        ) : (
+                            <>
+                                {icon}
+                                <Typography variant="body2" noWrap maxWidth={500}>
+                                    {file.name || file?.file_name}
+                                </Typography>
+                            </>
+                        )}
+                    </Box>
+                ))}
+            </Box>
+        )}
+    </FormControl>
+);
+
+export default function AddSections({ open, handleClose, setSectionFormData, selectedSection, setRemoveFile }) {
+
+    // State
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState(initialValues);
+    const [formValues, setFormValues] = useState({
+        _id: '',
+        title: '',
+        lesson: '',
+        image: [],
+        video: [],
+        document: []
+    });
 
     useEffect(() => {
         if (selectedSection) {
-            const addTimestampAndPreview = (urlArray, type) =>
-                urlArray.map((url) => {
-                    const filename = url.split('/').pop();
-                    return {
-                        name: filename,
-                        preview: url,
-                        lastModified: Date.now(),
-                        type,
-                        url,
-                        createdAt: new Date().toISOString()
-                    };
-                });
-
-            const transformedData = {
+            setFormValues({
+                _id: selectedSection._id || '',
                 title: selectedSection.title || '',
                 lesson: selectedSection.lesson || '',
-                image: selectedSection.image[0]?.type ? selectedSection.image : addTimestampAndPreview(selectedSection.image || [], 'image/*'),
-                video: selectedSection.video[0]?.type ? selectedSection.video : addTimestampAndPreview(selectedSection.video || [], 'video/*'),
-                document: selectedSection.document[0]?.type ? selectedSection.document : addTimestampAndPreview(selectedSection.document || [], 'application/*'),
-            };
-
-            setFormData(transformedData);
+                image: selectedSection.image || [],
+                video: selectedSection.video || [],
+                document: selectedSection.document || [],
+            });
         } else {
-            setFormData(initialValues);
+            setFormValues({
+                _id: '',
+                title: '',
+                lesson: '',
+                image: [],
+                video: [],
+                document: []
+            });
         }
     }, [selectedSection]);
 
     const validationSchema = Yup.object({
-        title: Yup.string()
-            .required('Section Title is required'),
-        image: Yup.array()
-            .min(1, 'At least one image is required')
-            .required('Image is required'),
-        video: Yup.array()
-            .min(1, 'At least one video is required')
-            .required('Video is required'),
-        document: Yup.array()
-            .min(1, 'At least one document is required')
-            .required('Document is required')
+        title: Yup.string().required("Section Title is required"),
+        image: Yup.array().test(
+            "oneOfRequired",
+            "At least one media file (image, video, or document) is required",
+            function () {
+                const { image, video, document } = this.parent;
+                return (
+                    (Array.isArray(image) && image.length > 0) ||
+                    (Array.isArray(video) && video.length > 0) ||
+                    (Array.isArray(document) && document.length > 0)
+                );
+            }
+        ),
     });
 
     const handleSubmit = async (values) => {
         setLoading(true);
 
-        if (selectedSection) {
-            setCourseRecord(prev => {
-                const updatedSections = prev.sections.map(section =>
-                    section._id === selectedSection._id
-                        ? { ...section, ...values }
-                        : section
+        setSectionFormData(prev => {
+            const sections = Array.isArray(prev) ? prev : [];
+
+            if (selectedSection) {
+                return sections.map(section =>
+                    section._id === selectedSection._id ? { ...section, ...values } : section
                 );
-
-                return {
-                    ...prev,
-                    sections: updatedSections
-                };
-            });
-        } else {
-            const newSectionId = courseRecord?.sections?.length + 1 || 1;
-
-            const updatedSection = {
-                ...values,
-                _id: newSectionId
-            };
-
-            setCourseRecord(prev => ({
-                ...prev,
-                sections: [...prev.sections, updatedSection]
-            }));
-        }
+            } else {
+                return [...sections, { ...values, _id: Date.now().toString() }];
+            }
+        });
 
         setLoading(false);
         handleClose();
+        setFormValues({
+            _id: '',
+            title: '',
+            lesson: '',
+            image: [],
+            video: [],
+            document: []
+        });
     };
 
     return (
-        <Dialog fullWidth open={open} sx={{ borderRadius: "12px" }} onClose={handleClose}>
+        <Dialog fullWidth open={open} onClose={handleClose}>
             <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 {selectedSection ? "Update" : "Add"} Section
-                <IconButton color='inherit' sx={{ border: "1px solid black" }} onClick={handleClose}>
+                <IconButton onClick={handleClose} sx={{ border: "1px solid black" }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
             <DialogContent dividers>
                 <Formik
-                    initialValues={formData}
+                    initialValues={formValues}
                     enableReinitialize
                     validationSchema={validationSchema}
                     onSubmit={handleSubmit}
                 >
                     {({ errors, handleChange, values, handleBlur, touched, setFieldValue }) => (
-                        <Form style={{ width: "100%", display: "flex", flexDirection: "column", gap: "1rem", marginTop: "0.5rem" }}>
-                            {/* title */}
+                        <Form style={{ display: "flex", flexDirection: "column", gap: "1rem", marginTop: "0.5rem" }}>
                             <FormControl fullWidth>
                                 <Typography sx={{ mx: 0.5, mb: 0.4 }}>Section Title</Typography>
                                 <TextField
                                     name='title'
-                                    type='text'
                                     placeholder="Section Title"
                                     value={values.title}
                                     onChange={handleChange}
@@ -146,12 +212,10 @@ export default function AddSections({ open, handleClose, courseRecord, setCourse
                                 />
                             </FormControl>
 
-                            {/* Text Lesson */}
                             <FormControl fullWidth>
                                 <Typography sx={{ mx: 0.5, mb: 0.4 }}>Text Lesson</Typography>
                                 <TextField
                                     name='lesson'
-                                    type='text'
                                     multiline
                                     rows={4}
                                     placeholder="Text Lesson"
@@ -160,193 +224,50 @@ export default function AddSections({ open, handleClose, courseRecord, setCourse
                                 />
                             </FormControl>
 
-                            {/* Image Upload */}
-                            <FormControl fullWidth>
-                                <Typography sx={{ mx: 0.5, mb: 0.4 }}>Image Upload</Typography>
-                                <Button component="label" role={undefined} variant="outlined" tabIndex={-1} className='upload-button'>
-                                    Upload Image
-                                    <VisuallyHiddenInput
-                                        type="file"
-                                        name='image'
-                                        accept='image/*'
-                                        multiple
-                                        onBlur={handleBlur}
-                                        onChange={(event) => {
-                                            const files = Array.from(event.currentTarget.files || []);
-                                            const imageFiles = files.map(file =>
-                                                Object.assign(file, { preview: URL.createObjectURL(file) })
-                                            );
-                                            setFieldValue("image", [...(values.image || []), ...imageFiles]);
-                                        }}
-                                    />
-                                </Button>
-                                {touched.image && Boolean(errors.image) && (
-                                    <FormHelperText error>{errors.image}</FormHelperText>
-                                )}
-                                {values.image && values.image.length > 0 && (
-                                    <Box mt={2} display="flex" flexWrap="wrap" gap={2}>
-                                        {values.image.map((file, index) => (
-                                            <Box
-                                                key={index}
-                                                display="flex"
-                                                alignItems="center"
-                                                gap={1}
-                                                sx={{
-                                                    position: 'relative', border: '1px solid #ccc', borderRadius: '8px', padding: '8px 12px', backgroundColor: '#f9f9f9',
-                                                    width: "146px"
-                                                }}
-                                            >
-                                                <IconButton
-                                                    sx={{
-                                                        position: 'absolute', top: '-11px', right: '-11px', padding: '4px', color: '#fff', bgcolor: 'black',
-                                                        '&:hover': {
-                                                            bgcolor: 'black',
-                                                        },
-                                                    }}
-                                                    onClick={() => {
-                                                        const newFiles = values.image.filter((_, i) => i !== index);
-                                                        setFieldValue("image", newFiles);
-                                                    }}
-                                                >
-                                                    <CloseIcon fontSize="small" />
-                                                </IconButton>
-                                                <img
-                                                    src={file.preview || URL.createObjectURL(file.image)}
-                                                    alt="preview"
-                                                    style={{ width: "100%", maxHeight: "180px", objectFit: "contain" }}
-                                                />
-                                            </Box>
-                                        ))}
-                                    </Box>
-                                )}
-                            </FormControl>
+                            <UploadField
+                                label="Image"
+                                name="image"
+                                accept="image/*"
+                                icon={null}
+                                values={values}
+                                setFieldValue={setFieldValue}
+                                setRemoveFile={setRemoveFile}
+                            />
 
-                            {/* Video Upload */}
-                            <FormControl fullWidth>
-                                <Typography sx={{ mx: 0.5, mb: 0.4 }}>Video Upload</Typography>
-                                <Button component="label" role={undefined} variant="outlined" tabIndex={-1} className='upload-button'>
-                                    Upload Video
-                                    <VisuallyHiddenInput
-                                        type="file"
-                                        name='video'
-                                        accept='video/*'
-                                        onBlur={handleBlur}
-                                        onChange={(event) => {
-                                            const files = Array.from(event.currentTarget.files || []);
-                                            const videoFiles = files.map(file =>
-                                                Object.assign(file, { preview: URL.createObjectURL(file) })
-                                            );
-                                            setFieldValue("video", [...(values.video || []), ...videoFiles]);
-                                        }}
-                                        multiple
-                                    />
-                                </Button>
-                                {touched.video && Boolean(errors.video) && (
-                                    <FormHelperText error>{errors.video}</FormHelperText>
-                                )}
-                                {values.video && values.video.length > 0 && (
-                                    <Box mt={2} display="flex" flexWrap="wrap" gap={2}>
-                                        {values.video.map((file, index) => (
-                                            <Box
-                                                key={index}
-                                                display="flex"
-                                                alignItems="center"
-                                                gap={1}
-                                                sx={{
-                                                    position: 'relative', border: '1px solid #ccc', borderRadius: '8px', padding: '8px 12px', backgroundColor: '#f9f9f9',
-                                                }}
-                                            >
-                                                <IconButton
-                                                    sx={{
-                                                        position: 'absolute', top: '-11px', right: '-11px', padding: '4px', color: '#fff', bgcolor: 'black',
-                                                        '&:hover': {
-                                                            bgcolor: 'black',
-                                                        },
-                                                    }}
-                                                    onClick={() => {
-                                                        const newFiles = values.video.filter((_, i) => i !== index);
-                                                        setFieldValue("video", newFiles);
-                                                    }}
-                                                >
-                                                    <CloseIcon fontSize="small" />
-                                                </IconButton>
-                                                <PlayCircleOutlinedIcon fontSize="large" />
-                                                <Typography variant="body2" noWrap maxWidth={500}>
-                                                    {file.name}
-                                                </Typography>
-                                            </Box>
-                                        ))}
-                                    </Box>
-                                )}
-                            </FormControl>
+                            <UploadField
+                                label="Video"
+                                name="video"
+                                accept="video/*"
+                                icon={<PlayCircleOutlinedIcon fontSize="large" />}
+                                values={values}
+                                setFieldValue={setFieldValue}
+                                setRemoveFile={setRemoveFile}
+                            />
 
-                            {/* Document Upload */}
-                            <FormControl fullWidth>
-                                <Typography sx={{ mx: 0.5, mb: 0.4 }}>PDF / Document Upload</Typography>
-                                <Button component="label" role={undefined} variant="outlined" tabIndex={-1} className='upload-button'>
-                                    Upload Document
-                                    <VisuallyHiddenInput
-                                        type="file"
-                                        name='image'
-                                        accept='application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                                        onBlur={handleBlur}
-                                        onChange={(event) => {
-                                            const files = Array.from(event.currentTarget.files || []);
-                                            const updatedDocs = files.map(file =>
-                                                Object.assign(file, { preview: URL.createObjectURL(file) })
-                                            );
-                                            setFieldValue("document", [...(values.document || []), ...updatedDocs]);
-                                        }}
-                                        multiple
-                                    />
-                                </Button>
-                                {touched.document && Boolean(errors.document) && (
-                                    <FormHelperText error>{errors.document}</FormHelperText>
-                                )}
-                                {values.document && values.document.length > 0 && (
-                                    <Box mt={2} display="flex" flexWrap="wrap" gap={2}>
-                                        {values.document.map((file, index) => (
-                                            <Box
-                                                key={index}
-                                                display="flex"
-                                                alignItems="center"
-                                                gap={1}
-                                                sx={{
-                                                    position: 'relative', border: '1px solid #ccc', borderRadius: '8px', padding: '8px 12px', backgroundColor: '#f9f9f9',
-                                                }}
-                                            >
-                                                <IconButton
-                                                    sx={{
-                                                        position: 'absolute', top: '-11px', right: '-11px', padding: '4px', color: '#fff', bgcolor: 'black',
-                                                        '&:hover': {
-                                                            bgcolor: 'black',
-                                                        },
-                                                    }}
-                                                    onClick={() => {
-                                                        const newFiles = values.document.filter((_, i) => i !== index);
-                                                        setFieldValue("document", newFiles);
-                                                    }}
-                                                >
-                                                    <CloseIcon fontSize="small" />
-                                                </IconButton>
-                                                <PictureAsPdfOutlinedIcon fontSize="large" />
-                                                <Typography variant="body2" noWrap maxWidth={500}>
-                                                    {file.name}
-                                                </Typography>
-                                            </Box>
-                                        ))}
-                                    </Box>
-                                )}
-                            </FormControl>
+                            <UploadField
+                                label="Document"
+                                name="document"
+                                accept="application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                icon={<PictureAsPdfOutlinedIcon fontSize="large" />}
+                                values={values}
+                                setFieldValue={setFieldValue}
+                                setRemoveFile={setRemoveFile}
+                            />
 
-                            <Divider sx={{ margin: "0px -24px" }} />
+                            {errors.image && (
+                                <FormHelperText sx={{ mt: 0.5, mx: 0 }} error>
+                                    {errors.image}
+                                </FormHelperText>
+                            )}
 
-                            <Box sx={{ display: "flex", justifyContent: "end", gap: "10px", width: "100%" }}>
-                                <Button type='submit' variant="contained" color="primary" loading={loading} sx={{ backgroundColor: "black", width: "100px", borderRadius: "10px", padding: "10px", fontWeight: "500", fontSize: "18px" }}>
+                            <Divider sx={{ mx: -3 }} />
+
+                            <Box sx={{ display: "flex", justifyContent: "end", gap: "10px" }}>
+                                <Button loading={loading} type='submit' variant="contained" sx={{ bgcolor: "black", width: "100px", borderRadius: "10px", fontWeight: "500", fontSize: "18px" }}>
                                     {selectedSection ? "Update" : "Add"}
                                 </Button>
-                                <Button variant="contained" color="" sx={{ backgroundColor: "white", width: "100px", borderRadius: "10px", padding: "10px", fontWeight: "500", fontSize: "18px" }}
-                                    onClick={() => handleClose()}>
+                                <Button variant="contained" sx={{ bgcolor: "white", color: "black", width: "100px", borderRadius: "10px", fontWeight: "500", fontSize: "18px" }}
+                                    onClick={handleClose}>
                                     Cancel
                                 </Button>
                             </Box>
@@ -355,5 +276,5 @@ export default function AddSections({ open, handleClose, courseRecord, setCourse
                 </Formik>
             </DialogContent>
         </Dialog>
-    )
+    );
 }

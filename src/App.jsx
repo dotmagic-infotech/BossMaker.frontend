@@ -2,12 +2,13 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
-
 import Loader from './components/Common/Loader';
 import MainLoader from './components/Common/MainLoader';
 import PermissionRoute from './components/layouts/PermissionRoute';
 import Participant from './pages/Participant/Participant';
 import AddParticipant from './pages/Participant/AddParticipant';
+import ParticipantsMangeAdmin from './pages/ParticipantsMangeAdmin/ParticipantsMangeAdmin';
+import AddParticipantsAdmin from './pages/ParticipantsMangeAdmin/AddParticipantsAdmin';
 import StudentCourses from './pages/StudentCourses/StudentCourses';
 
 // Custom Component
@@ -42,7 +43,7 @@ const ChangePassword = React.lazy(() => import('./pages/Settings/ChangePassword'
 import './App.css'
 
 function App() {
-  
+
   return (
     <Routes>
       <Route path="/admin/signin" element={<Suspense fallback={<MainLoader />}><SignIn /></Suspense>} />
@@ -65,6 +66,11 @@ function App() {
           <Route path="/admin/role-user/add-role" element={<Suspense fallback={<Loader />}> <PermissionRoute slug="role" action="edit"><AddRoleUser /></PermissionRoute></Suspense>} />
           <Route path="/admin/role-user/edit-role/:id" element={<Suspense fallback={<Loader />}> <PermissionRoute slug="role" action="edit"><AddRoleUser /></PermissionRoute></Suspense>} />
           <Route path="/admin/role-user/permission/:id" element={<Suspense fallback={<Loader />}><PermissionRoute slug="role" action="edit"><Permission /></PermissionRoute></Suspense>} />
+
+          {/* Participant Management In Admin */}
+          <Route path="/admin/participants" element={<Suspense fallback={<Loader />}><ParticipantsMangeAdmin /></Suspense>} />
+          <Route path="/admin/participants/add-participant" element={<Suspense fallback={<Loader />}><AddParticipantsAdmin /></Suspense>} />
+          <Route path="/admin/participants/edit-participant/:id" element={<Suspense fallback={<Loader />}><AddParticipantsAdmin /></Suspense>} />
 
           {/* Participant Management */}
           <Route path="/admin/participant" element={<Suspense fallback={<Loader />}><PermissionRoute slug="participants"><Participant /></PermissionRoute></Suspense>} />
