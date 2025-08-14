@@ -21,16 +21,8 @@ import { useToast } from '../../components/ToastProvider/ToastProvider';
 import { useAuth } from '../../context/AuthContext';
 import AddSections from './AddSections';
 
-const ITEM_HEIGHT = 48;
-const ITEM_PADDING_TOP = 8;
-const MenuProps = {
-    PaperProps: {
-        style: {
-            maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-            width: 250,
-        },
-    },
-};
+// Utils
+import { MenuProps } from '../../utils/appUtils';
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
